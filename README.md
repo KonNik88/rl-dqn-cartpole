@@ -1,108 +1,149 @@
 # Deep Reinforcement Learning — DQN for CartPole and Pong
 
 ![Python](https://img.shields.io/badge/Python-3.10-blue)
-![PyTorch](https://img.shields.io/badge/PyTorch-2.x-red)
+![PyTorch](https://img.shields.io/badge/PyTorch-2.5.1-red)
 ![Gymnasium](https://img.shields.io/badge/Gymnasium-0.29-green)
-![Status](https://img.shields.io/badge/Project-Portfolio--Ready-brightgreen)
+![Status](https://img.shields.io/badge/Status-In_Progress-yellow)
 
 ## Overview
-This project implements **Deep Q-Networks (DQN)** and its popular extensions:
-- **Double DQN**
+
+This project implements **Deep Q-Networks (DQN)** and advanced extensions for two environments:
+
+- **CartPole-v1** — baseline task for tabular control.  
+- **PongNoFrameskip-v4** — pixel-based Atari environment using CNN.
+
+Extensions implemented:
+- **Double DQN (DDQN)**
 - **Dueling DQN**
 - **Prioritized Experience Replay (PER)**
 - **N-step returns**
+- **Soft target update (τ)**
+- **TensorBoard logging and video evaluation**
 
-Environments:
-- Classic Control: **CartPole-v1**
-- Atari: **PongNoFrameskip-v4** (with preprocessing & wrappers)
-
-The implementation is designed to be **reproducible, modular, and portfolio-friendly**.  
-It includes logging with **TensorBoard / MLflow**, hyperparameter sweeps with **Optuna**, and gameplay **video recordings**.
+The implementation is **modular and reproducible**, designed for educational and portfolio use.
 
 ---
 
 ## Project Structure
+
 ```
-.
-├─ envs/               # environment wrappers (CartPole, Atari)
-├─ models/             # DQN variants (CNN, MLP, Dueling, etc.)
-├─ memory/             # replay buffer (standard, PER, N-step)
-├─ train/              # training scripts (cartpole, pong, evaluation)
-├─ utils/              # logging, schedulers, seeds
-├─ configs/            # YAML configs for reproducible runs
-├─ artifacts/          # checkpoints, logs, videos, metrics
-├─ requirements.txt
-└─ README.md
+project/
+│
+├─ configs/
+│    ├─ cartpole.yaml
+│    ├─ pong_ddqn_duel_per_n3.yaml
+│    └─ pong_ddqn_duel_per_n3_long.yaml     # final 3M-run
+│
+├─ envs/
+│    ├─ cartpole_wrappers.py
+│    └─ atari_wrappers.py                   # preprocessing: 84×84 gray, FrameStack(4), ActionMap([2,5])
+│
+├─ models/
+│    ├─ dqn_mlp.py                          # MLP for CartPole
+│    └─ dqn_cnn.py                          # NatureCNN for Pong (dueling=True/False)
+│
+├─ memory/
+│    ├─ replay_buffer.py                    # uniform replay
+│    └─ per_buffer.py                       # prioritized replay (α, β) + n-step
+│
+├─ train/
+│    ├─ train_cartpole.py
+│    ├─ train_pong.py
+│    ├─ eval.py
+│    └─ eval_pong.py
+│
+├─ artifacts_pong/
+│    ├─ tensorboard/                        # TB logs per run
+│    ├─ checkpoints/                        # model checkpoints
+│    ├─ plots/                              # generated training plots
+│    └─ videos/                             # evaluation videos
+│
+└─ notebooks/
+     ├─ 01_cartpole_experiments.ipynb
+     └─ 02_pong_experiments.ipynb
 ```
 
 ---
 
-## Features
-- Modular DQN implementation (toggle Double, Dueling, PER, N-step)
-- Atari preprocessing: gray-scaling, resizing to 84×84, frame stacking
-- Replay buffer with Prioritized Sampling (SumTree)
-- ε-greedy and Noisy Nets exploration
-- Target soft updates (Polyak averaging)
-- Logging with TensorBoard & MLflow
-- Hyperparameter tuning with Optuna
-- Video generation for evaluation episodes
+## Environment & Dependencies
 
----
-
-## Results
-- **CartPole**: Solved consistently (avg. return > 195 over 100 episodes).
-- **Pong**: Stable training with DQN extensions; reward improves towards ~+18 after ~3–5M frames (depending on config).
-Graphs and videos will be added here.
-
----
-
-## Installation
 ```bash
-git clone https://github.com/USERNAME/rl-dqn-pong-cartpole.git
-cd rl-dqn-pong-cartpole
+conda create -n rl_env python=3.10
+conda activate rl_env
 pip install -r requirements.txt
 ```
 
-Dependencies:
-- Python 3.10+
-- torch
+Main packages:
+- torch>=2.5.1
 - gymnasium[atari,accept-rom-license]
 - opencv-python
-- optuna
-- mlflow
+- numpy, matplotlib
 - tensorboard
+- optuna, mlflow (for hyperparameter sweeps)
 
 ---
 
 ## Usage
-Train CartPole:
+
+Train **CartPole**:
 ```bash
-python train/train_cartpole.py --config configs/cartpole.yaml
+python -m train.train_cartpole --config configs/cartpole.yaml
 ```
 
-Train Pong:
+Train **Pong (DDQN+Dueling+PER+n-step)**:
 ```bash
-python train/train_pong.py --config configs/pong.yaml
+python -m train.train_pong --config configs/pong_ddqn_duel_per_n3_long.yaml
 ```
 
-Evaluate and record videos:
+Evaluate and record video:
 ```bash
-python train/eval.py --env PongNoFrameskip-v4 --checkpoint artifacts/checkpoints/best.pth --record artifacts/videos/
+python -m train.eval_pong --ckpt artifacts_pong/checkpoints/.../final.pth --episodes 10 --epsilon 0.01
+```
+
+View TensorBoard logs:
+```bash
+tensorboard --logdir artifacts_pong/tensorboard
 ```
 
 ---
 
-## Reproducibility
-- All configs stored in `configs/`.
-- Seeds are fixed for determinism across PyTorch/NumPy/envs.
-- Set RNG seed (default: 42).
+## Results Summary
+
+| Date | Config | Frames | Mean Return | Comment |
+|:--:|:--|:--:|:--:|:--|
+| 09.11 | pong_ddqn_duel_per_n3_probe | 800k | +4.6 | First “alive” signal |
+| 10.11 | same config (new seed) | 800k | −21 | stochastic dead run |
+| 12.11 | pong_ddqn_duel_per_n3_long | 3M | — | checkpoints not saved (under investigation) |
+
+- CartPole consistently solved (MA100 > 400).  
+- Pong pipeline operational; first signs of learning observed after ~0.8M frames.
+
+---
+
+## Key Insights
+
+- Pong requires long runs (>1M frames) for learning stability.  
+- PER + n-step improves training but needs proper β schedule and long warmup.  
+- Soft target update (τ=0.005) stabilizes DDQN.  
+- Logging and evaluation fully integrated.
+
+---
+
+## Next Steps
+
+- Fix checkpoint saving logic for long runs.  
+- Add episode-level MA100 logging in TensorBoard.  
+- Complete long-run training (~3M frames).  
+- Finalize plots, videos, and summary notebook for GitHub.
 
 ---
 
 ## Repository Topics
-`reinforcement-learning, deep-reinforcement-learning, dqn, double-dqn, dueling-dqn, prioritized-experience-replay, atari, cartpole, pong, pytorch, machine-learning, portfolio-project`
+
+`reinforcement-learning, deep-reinforcement-learning, dqn, ddqn, dueling-dqn, prioritized-replay, atari, pong, cartpole, pytorch, portfolio-project`
 
 ---
 
 ## License
-MIT License — free to use for research and portfolio purposes.
+
+MIT License — Free for educational and research purposes.
