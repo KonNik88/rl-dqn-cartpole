@@ -1,0 +1,32 @@
+env_id: PongNoFrameskip-v4
+wrappers:
+  frame_skip: 4
+  frame_stack: 4
+  frame_size: 84
+  grayscale: true
+  clip_reward: true
+algo:
+  name: ddqn
+  dueling: true
+  gamma: 0.99
+  tau: 1.0
+  n_step: 3
+optim:
+  lr: 0.00025
+  batch_size: 32
+replay:
+  type: uniform
+  capacity: 150000
+  warmup_steps: 50000
+epsilon:
+  start: 1.0
+  end: 0.05
+  decay_steps: 500000
+train:
+  total_frames: 300000
+  target_update_interval: 4000
+  save_every_frames: 100000
+log:
+  out_dir: D:\ML\LS\Deep_learning\Reinforcement_learning\project\artifacts_pong\tensorboard
+  save_dir: D:\ML\LS\Deep_learning\Reinforcement_learning\project\artifacts_pong\checkpoints
+model_name: smokeD_uni_n3_lr2.5e-4_d500k_w50k_tu4k

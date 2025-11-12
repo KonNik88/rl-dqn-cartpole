@@ -1,0 +1,28 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Environments & notebooks' checkpoints
+.ipynb_checkpoints/
+.venv/
+.env
+env/
+venv/
+
+# IDE
+.vscode/
+.idea/
+
+# Artifacts
+artifacts/
+artifacts_pong/
+runs/
+mlruns/
+tensorboard/
+videos/
+checkpoints/
+
+# OS
+.DS_Store
+Thumbs.db

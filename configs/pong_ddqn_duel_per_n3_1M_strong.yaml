@@ -1,0 +1,44 @@
+run_name: pong_ddqn_duel_per_n3_1M_strong
+seed: 0
+
+env:
+  env_id: PongNoFrameskip-v4
+  frame_stack: 4
+  noop_max: 30
+  skip: 4
+  minimal_actions: true
+
+log:
+  out_dir: D:/ML/LS/Deep_learning/Reinforcement_learning/project/artifacts_pong/tensorboard
+  save_dir: D:/ML/LS/Deep_learning/Reinforcement_learning/project/artifacts_pong/checkpoints
+  plots_dir: D:/ML/LS/Deep_learning/Reinforcement_learning/project/artifacts_pong/plots
+  log_interval: 1000
+
+train:
+  total_frames: 1000000
+  warmup: 50000
+  batch_size: 64
+  gamma: 0.99
+  n_step: 3
+  target_update_freq: 30000
+  grad_clip_norm: 20.0
+  save_every: 250000
+
+optimizer:
+  name: adam
+  lr: 0.0001
+
+epsilon:
+  start: 1.0
+  end: 0.05
+  decay_steps: 800000
+
+replay:
+  type: per
+  capacity: 1000000
+  per_alpha: 0.6
+  per_beta_start: 0.4
+  per_beta_end: 1.0
+
+model:
+  dueling: true

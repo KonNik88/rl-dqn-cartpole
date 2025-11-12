@@ -1,0 +1,45 @@
+seed: 42
+env_id: CartPole-v1
+total_steps: 150000
+eval_every_steps: 5000
+eval_episodes: 10
+agent:
+  gamma: 0.99
+  n_step: 3
+  double_dqn: true
+  dueling: false
+  noisy_nets: false
+  tau: 0.005
+  lr: 0.00025
+  grad_clip: 10.0
+  use_amp: false
+network:
+  type: mlp
+  hidden_sizes:
+  - 256
+  - 256
+  layer_norm: true
+replay:
+  type: per
+  capacity: 50000
+  batch_size: 64
+  warmup_steps: 4000
+  per_alpha: 0.5
+  per_beta_start: 0.6
+  per_beta_end: 1.0
+exploration:
+  strategy: epsilon_greedy
+  eps_start: 1.0
+  eps_end: 0.05
+  eps_decay_steps: 30000
+logging:
+  log_dir: D:\ML\LS\Deep_learning\Reinforcement_learning\project\artifacts\tb_final
+  tb: true
+  mlflow: false
+  video_every_eval: true
+env:
+  name: CartPole-v1
+checkpointing:
+  dir: artifacts/checkpoints
+  save_every_episodes: 100     
+  save_best_ma100: true 
