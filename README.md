@@ -31,14 +31,14 @@ The code is designed as an **educational / portfolio project**:
 ```text
 .
 ├─ configs/
-│   └─ cartpole.yaml              # base config for DQN/DDQN/PER/N-step
+│   └─ cartpole.yaml              # base config for DQN/DDQN/PER/N-step and others
 │
 ├─ envs/
 │   └─ cartpole_wrappers.py       # make_cartpole(...), seeding, wrappers
 │
 ├─ models/
-│   └─ dqn_mlp.py                 # MLPQ and DuelingMLP for CartPole
-│
+│   ├─ dqn_mlp.py                 # MLPQ and DuelingMLP for CartPole
+│   └─ dqn_cnn.py                 # (legacy, not used in CartPole pipeline)
 ├─ memory/
 │   ├─ replay_buffer.py           # uniform replay, supports n-step
 │   └─ per_buffer.py              # prioritized replay (α, β) + n-step
@@ -51,11 +51,15 @@ The code is designed as an **educational / portfolio project**:
 │   ├─ schedule.py                # LinearSchedule for ε, etc.
 │   └─ seed.py                    # set_seed(...) for reproducibility
 │
+├─ scripts/
+│   ├─ run_cartpole.sh            # convenience launcher (Linux/macOS)
+│   └─ run_cartpole.bat           # convenience launcher (Windows)
+│
 ├─ notebooks/
 │   └─ 01_cartpole_experiments.ipynb  # experiments & analysis
 │
-├─ run_cartpole.sh                # convenience launcher (Linux/macOS)
-├─ run_cartpole.bat               # convenience launcher (Windows)
+├─ LICENSE
+├─ .gitignore
 ├─ requirements.txt
 └─ README.md
 ```
