@@ -16,7 +16,6 @@ venv/
 
 # Artifacts
 artifacts/
-artifacts_pong/
 runs/
 mlruns/
 tensorboard/

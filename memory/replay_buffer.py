@@ -1,9 +1,9 @@
 # memory/replay_buffer.py
 from __future__ import annotations
 from collections import deque
-import random
-import numpy as np
 from typing import Deque, Optional, Tuple
+
+import numpy as np
 
 
 class NStepHelper:
@@ -30,7 +30,6 @@ class NStepHelper:
         """
         R, discount = 0.0, 1.0
         k = 0
-        # аккумулируем вознаграждение по первым k шагам (k<=n и k<=len(buf))
         for (_, _, r, _, _done) in list(self.buf)[: self.n]:
             R += discount * r
             discount *= self.gamma
@@ -39,10 +38,8 @@ class NStepHelper:
                 break
 
         s0, a0, _, _, _ = self.buf[0]
-        # конечное наблюдение и done_k — берём на шаге k-1 (последнем сложенном)
         s_k, done_k = self.buf[k - 1][3], self.buf[k - 1][4]
-        # фактический дисконт к концу k шагов
-        discount_k = discount  # это gamma^k
+        discount_k = discount  # gamma^k
 
         return s0, a0, R, s_k, done_k, discount_k
 
@@ -54,17 +51,13 @@ class NStepHelper:
         """
         self.buf.append(tr)
 
-        # сдаём готовый переход, если длина достигла n
         if len(self.buf) >= self.n:
             s0, a0, R, s_k, done_k, discount_k = self._compute_return()
-            # снимаем первый элемент очереди (он теперь «использован»)
             self.buf.popleft()
             return (s0, a0, R, s_k, done_k, discount_k)
 
-        # если пришёл done раньше, чем набрали n, отдаём имеющееся
-        if self.buf and self.buf[-1][4]:  # последний добавленный был done
+        if self.buf and self.buf[-1][4]:  # последний был done
             s0, a0, R, s_k, done_k, discount_k = self._compute_return()
-            # не popleft здесь! вернём хвост через finalize_episode
             return (s0, a0, R, s_k, done_k, discount_k)
 
         return None
@@ -79,14 +72,14 @@ class NStepHelper:
             s0, a0, R, s_k, done_k, discount_k = self._compute_return()
             self.buf.popleft()
             out.append((s0, a0, R, s_k, done_k, discount_k))
-            # если последний был done — после popleft() можем выйти, но условие while и так остановит цикл
         return out
 
 
 class ReplayBuffer:
     """
     Простой uniform replay с поддержкой n-step.
-    Хранит наблюдения как uint8 (H,W,C) для экономии памяти.
+    Не делает предположений о форме наблюдений:
+      - для CartPole это будет (4,)
     """
 
     def __init__(self, capacity: int, n_step: int = 1, gamma: float = 0.99):
@@ -96,7 +89,6 @@ class ReplayBuffer:
         self.pos = 0
         self.full = False
 
-        # массивы под данные
         self.obs = None
         self.next_obs = None
         self.actions = np.empty(self.capacity, dtype=np.int32)
@@ -105,26 +97,21 @@ class ReplayBuffer:
         self.discounts = np.empty(self.capacity, dtype=np.float32)
 
         self.nhelper = NStepHelper(n=self.n_step, gamma=self.gamma)
-        self.size = 0  # фактическое число записанных элементов
+        self.size = 0
 
     def __len__(self):
         return self.size
 
     def _init_obs_arrays(self, obs: np.ndarray):
-        # ожидаем (H,W,C) или (C,H,W). Приводим к (H,W,C) для хранения.
-        arr = np.asarray(obs, dtype=np.uint8)
-        if arr.ndim != 3:
-            raise ValueError(f"obs must be 3D, got {arr.shape}")
-        if arr.shape[0] in (1, 4) and arr.shape[1] == 84 and arr.shape[2] == 84:
-            # CHW -> HWC
-            arr = np.transpose(arr, (1, 2, 0))
-        elif arr.shape[2] in (1, 4) and arr.shape[0] == 84 and arr.shape[1] == 84:
-            pass  # уже HWC
-        else:
-            raise ValueError(f"Unexpected obs shape {arr.shape}")
-        H, W, C = arr.shape
-        self.obs = np.empty((self.capacity, H, W, C), dtype=np.uint8)
-        self.next_obs = np.empty((self.capacity, H, W, C), dtype=np.uint8)
+        """
+        Инициализируем массивы под наблюдения по первой форме obs.
+        Поддерживаем любую форму (вектор, картинка, стек).
+        """
+        arr = np.asarray(obs)
+        if arr.ndim == 0:
+            raise ValueError(f"obs must have at least 1 dim, got scalar {arr!r}")
+        self.obs = np.empty((self.capacity,) + arr.shape, dtype=arr.dtype)
+        self.next_obs = np.empty_like(self.obs)
 
     def push(self, obs, action: int, reward: float, next_obs, done: bool):
         """
@@ -134,16 +121,10 @@ class ReplayBuffer:
         if self.obs is None:
             self._init_obs_arrays(obs)
 
-        # нормализуем представление наблюдений к HWC (uint8) для хранения
-        def to_hwc(x):
-            arr = np.asarray(x, dtype=np.uint8)
-            if arr.ndim != 3:
-                raise ValueError(f"obs must be 3D, got {arr.shape}")
-            if arr.shape[0] in (1, 4) and arr.shape[1] == 84 and arr.shape[2] == 84:  # CHW -> HWC
-                arr = np.transpose(arr, (1, 2, 0))
-            return arr
+        def to_arr(x):
+            return np.asarray(x, dtype=self.obs.dtype)
 
-        tr = (to_hwc(obs), int(action), float(reward), to_hwc(next_obs), bool(done))
+        tr = (to_arr(obs), int(action), float(reward), to_arr(next_obs), bool(done))
         out = self.nhelper.push(tr)
 
         def _write(s0, a0, R, s_k, done_k, discount_k):
